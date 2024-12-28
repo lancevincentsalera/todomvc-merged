@@ -1,41 +1,169 @@
+using Microsoft.EntityFrameworkCore;
+using TodoApi.Data;
+using TodoApi.Data.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Configuration.AddUserSecrets<Program>();
+
+builder.Services.AddDbContext<TodoApiContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
 
-app.MapGet("/weatherforecast", () =>
+
+/* Minimal APIs */
+/******************/
+
+#region GET ALL TODO ITEMS
+// GET ALL TODO ITEM IN THE TODO LIST
+app.MapGet("api/todoitems", async (TodoApiContext db) =>
+    await db.TodoItems.Select(todo => new TodoItemReadDto(todo.Id, todo.Title, todo.IsCompleted)).ToListAsync()
+).WithName("GetAllTodoItems")
+.WithTags("TodoList")
+.Produces<List<TodoItemReadDto>>(StatusCodes.Status200OK)
+.WithDescription("Retrieves all Todo items.");
+#endregion
+
+
+
+
+#region ADD TODO ITEM
+// ADD A TODO ITEM
+app.MapPost("/api/todoitems", async (TodoApiContext db, TodoItemCreateDto input) =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
+    var todo = new TodoItem
+    {
+        Title = input.Title,
+    };
+    db.TodoItems.Add(todo);
+    await db.SaveChangesAsync();
+    var todoDto = new TodoItemReadDto(todo.Id, todo.Title, todo.IsCompleted);
+    return Results.Created($"api/todoitems/{todo.Id}", todoDto);
 })
-.WithName("GetWeatherForecast");
+.WithName("AddTodoItem")
+.WithTags("TodoList")
+.Produces<TodoItemReadDto>(StatusCodes.Status201Created)
+.WithDescription("Adds a new Todo item.");
+#endregion
+
+
+
+#region UPDATE ALL GIVEN TODO ITEMS AS COMPLETED
+// UPDATES ALL TODO ITEMS GIVEN AS COMPLETED
+app.MapPut("/api/todoitems/toggle-all", async (TodoApiContext db, List<TodoItem> todoItems) =>
+{
+    if (todoItems.Count == 0) return Results.NotFound($"No items to update");
+
+    foreach (var todo in todoItems)
+    {
+        var todoItem = await db.TodoItems.FindAsync(todo.Id);
+        if (todoItem is null) return Results.NotFound($"Item with id: {todo.Id} does not exist");
+        todoItem.IsCompleted = todo.IsCompleted;
+    }
+
+    await db.SaveChangesAsync();
+
+    return Results.NoContent();
+})
+.WithName("UpdateTodoItems")
+.WithTags("TodoList")
+.Produces(StatusCodes.Status204NoContent)
+.Produces(StatusCodes.Status404NotFound)
+.WithDescription("Updates an existing Todo item by ID.");
+#endregion
+
+
+
+
+#region UPDATE TODO ITEM
+// UPDATE THE SPECIFIED TODO ITEM GIVEN THE ID
+app.MapPut("/api/todoitems/{id}", async (TodoApiContext db, int id, TodoItemUpdateDto todoUpdate) =>
+{
+    var todo = await db.TodoItems.FindAsync(id);
+    if (todo is null) return Results.NotFound($"Item with id: {id} does not exist");
+
+    todo.Title = todoUpdate.Title;
+    todo.IsCompleted = todoUpdate.IsCompleted;
+
+    await db.SaveChangesAsync();
+
+    return Results.NoContent();
+})
+.WithName("UpdateTodoItem")
+.WithTags("TodoList")
+.Produces(StatusCodes.Status204NoContent)
+.Produces(StatusCodes.Status404NotFound)
+.WithDescription("Updates an existing Todo item by ID.");
+#endregion
+
+
+
+
+#region DELETE TODO ITEM
+// DELETE A TODO ITEM BY ID
+app.MapDelete("/api/todoitems/{id}", async (TodoApiContext db, int id) =>
+{
+    var todoToBeDeleted = await db.TodoItems.FindAsync(id);
+    if (todoToBeDeleted is null) return Results.NotFound($"Item with id: {id} does not exist.");
+
+    db.TodoItems.Remove(todoToBeDeleted);
+
+    await db.SaveChangesAsync();
+
+    return Results.NoContent();
+})
+.WithName("DeleteTodoItem")
+.WithTags("TodoList")
+.Produces(StatusCodes.Status204NoContent)
+.Produces(StatusCodes.Status404NotFound)
+.WithDescription("Deletes a specified TodoItem by ID.");
+#endregion
+
+
+
+
+#region DELETE COMPLETED ITEMS
+// CLEAR ALL COMPLETED ITEMS
+app.MapDelete("/api/todoitems/completed", async (TodoApiContext db) =>
+{
+    var todos = await db.TodoItems.Where(todo => todo.IsCompleted).ToListAsync();
+    if (todos.Count == 0)
+    {
+        return Results.NotFound("No completed items to delete.");
+    }
+
+    db.TodoItems.RemoveRange(todos);
+
+    await db.SaveChangesAsync();
+
+    return Results.NoContent();
+})
+.WithName("DeleteCompletedItems")
+.WithTags("TodoList")
+.Produces(StatusCodes.Status204NoContent)
+.Produces(StatusCodes.Status404NotFound)
+.WithDescription("Deletes all completed Todo items.");
+#endregion
+
+
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+
+record TodoItemReadDto(int Id, string Title, bool IsCompleted);
+record TodoItemCreateDto(string Title);
+record TodoItemUpdateDto(string Title, bool IsCompleted);
