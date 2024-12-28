@@ -21,12 +21,10 @@ public class TodoService : ITodoService
         return await response.Content.ReadFromJsonAsync<TodoItem>()
                 ?? throw new InvalidOperationException("Response deserialization failed.");
     }
-    public async Task<TodoItem> UpdateTodoItem(TodoItem todoItem)
+    public async Task UpdateTodoItem(TodoItem todoItem)
     {
         var response = await _http.PutAsJsonAsync($"todoitems/{todoItem.Id}", todoItem);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TodoItem>()
-                ?? throw new InvalidOperationException("Response deserialization failed.");
     }
     public async Task ToggleAllTodoItems(List<TodoItem> todoItems)
     {
