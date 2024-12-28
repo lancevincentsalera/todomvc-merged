@@ -140,17 +140,19 @@ app.MapDelete("/api/todoitems/{id}", async (TodoApiContext db, int id) =>
 // CLEAR ALL COMPLETED ITEMS
 app.MapDelete("/api/todoitems/completed", async (TodoApiContext db) =>
 {
-    var todos = await db.TodoItems.ToListAsync();
-    if (todos.Count == 0)
-    {
-        return Results.NotFound("No completed items to delete.");
-    }
+    var completedTodos = await db.TodoItems
+       .Where(t => t.IsCompleted)
+       .ToListAsync();
+    if (completedTodos.Count == 0) return Results.NotFound("No completed items to delete.");
 
-    db.TodoItems.RemoveRange(todos.Where(todo => todo.IsCompleted));
-
+    db.TodoItems.RemoveRange(completedTodos.Where(todo => todo.IsCompleted));
     await db.SaveChangesAsync();
 
-    return Results.Ok(todos.Select(todo => new TodoItemReadDto(todo.Id, todo.Title, todo.IsCompleted)).Where(todo => !todo.IsCompleted));
+    var remainingTodos = await db.TodoItems
+        .Select(t => new TodoItemReadDto(t.Id, t.Title, t.IsCompleted))
+        .ToListAsync();
+
+    return Results.Ok(remainingTodos);
 })
 .WithName("DeleteCompletedItems")
 .WithTags("TodoList")
