@@ -1,0 +1,61 @@
+@using TodoClient.Data.Models
+@using TodoClient.Services
+@inject ITodoService TodoService
+
+<li class="todo-item @((todo.IsCompleted) ? "completed" : "")">
+    <div>
+        @if (IsEditing)
+        {
+            <div class="input-container">
+                <input class="edit" @ref="editInput" type="text" @bind="todo.Title" @onkeyup="HandleKeyUp"
+                    @onblur="HandleEditBlur">
+            </div>
+        }
+        else
+        {
+            <input class="toggle" type="checkbox" @bind="todo.IsCompleted" @bind:after="UpdateCheckbox">
+            <label class="title" @ondblclick="HandleDoubleClick">@todo.Title</label>
+            <button class="destroy" @onclick="OnRemoveClick"></button>
+        }
+    </div>
+</li>
+
+@code {
+    [Parameter]
+    public required TodoItem todo { get; set; }
+    [Parameter]
+    public EventCallback<TodoItem> RemoveItem { get; set; }
+    [Parameter]
+    public bool IsEditing { get; set; }
+    [Parameter]
+    public EventCallback<TodoItem> OnStartEditing { get; set; }
+    [Parameter]
+    public EventCallback OnStopEditing { get; set; }
+    private bool focusRequested = false;
+    private ElementReference editInput;
+    private async Task OnRemoveClick(MouseEventArgs e) => await RemoveItem.InvokeAsync(todo);
+    private async void UpdateCheckbox() => await TodoService.UpdateTodoItem(todo);
+    private async Task HandleDoubleClick(MouseEventArgs e)
+    {
+        await OnStartEditing.InvokeAsync(todo);
+        focusRequested = true;
+    }
+    private async Task HandleEditBlur(FocusEventArgs e) => await OnStopEditing.InvokeAsync();
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && todo.Title.Length > 1)
+        {
+            await OnStopEditing.InvokeAsync();
+            await TodoService.UpdateTodoItem(todo);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusRequested)
+        {
+            await editInput.FocusAsync();
+            focusRequested = false;
+        }
+    }
+}

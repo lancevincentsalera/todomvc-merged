@@ -1,7 +1,101 @@
-﻿@page "/"
+﻿@page "/{filter?}"
+@rendermode InteractiveServer
+@using TodoClient.Data.Models
+@using TodoClient.Data.Dtos
+@using TodoClient.Services
+@inject ITodoService TodoService
 
-<PageTitle>Home</PageTitle>
+<section class="todoapp">
+    <header class="header">
+        <h1>todos</h1>
+        <div class="input-container">
+            <input type="text" class="new-todo" placeholder="What needs to be done?" @bind="text"
+                @onkeyup="HandleNewTodoKeyUp">
+        </div>
+    </header>
+    <main>
+        @if (FilterTodos().Count != 0)
+        {
+            <div class="toggle-all-container">
+                <input type="checkbox" class="toggle-all" @onclick="HandleToggleAllClick"
+                    checked="@(activeTodosCount == 0)">
+                <label class="toggle-all-label">Toggle All Input</label>
+            </div>
+        }
+        <TodoList Todos="todos" FilterTodos="FilterTodos" />
+    </main>
+    @if (todos.Count != 0)
+    {
+        <footer class="footer">
+            <span class="todo-count">@activeTodosCount @((activeTodosCount > 1) ? "items" : "item") left!</span>
+            <ul class="filters">
+                <li>
+                    <NavLink href="/" Match="NavLinkMatch.All" ActiveClass="selected">All</NavLink>
+                </li>
+                <li>
+                    <NavLink href="/active" ActiveClass="selected">Active</NavLink>
+                </li>
+                <li>
+                    <NavLink href="/completed" ActiveClass="selected">Completed</NavLink>
+                </li>
+            </ul>
+            <button class="clear-completed" @onclick="ClearCompleted" disabled="@(activeTodosCount == todos.Count)">Clear
+                completed</button>
+        </footer>
+    }
+</section>
 
-<h1>Hello, world!</h1>
+@code {
+    [Parameter]
+    public string filter { get; set; } = "";
+    private List<TodoItem> todos = new();
+    private int activeTodosCount => todos.Count(t => !t.IsCompleted);
+    private string text = string.Empty;
 
-Welcome to your new app.
+    // Helper functions
+    private List<TodoItem> FilterTodos()
+    {
+        return filter switch
+        {
+            "active" => todos.Where(t => !t.IsCompleted).ToList(),
+            "completed" => todos.Where(t => t.IsCompleted).ToList(),
+            _ => todos
+        };
+    }
+
+    // Lifecycle functions
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            todos = await TodoService.LoadTodos();
+            StateHasChanged();
+        }
+    }
+
+    // Event Handlers
+    private async Task HandleNewTodoKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && text.Length > 1)
+        {
+            var todo = await TodoService.AddTodoItem(new TodoItemDto { Title = text });
+            text = string.Empty;
+            todos.Add(todo);
+        }
+    }
+    private async Task ClearCompleted(MouseEventArgs e) => todos = await TodoService.ClearCompleted();
+    private async Task HandleToggleAllClick(MouseEventArgs e)
+    {
+        var filteredTodos = FilterTodos();
+        if (string.IsNullOrEmpty(filter))
+        {
+            bool isChecked = activeTodosCount != 0;
+            filteredTodos.ForEach(t => t.IsCompleted = isChecked);
+        }
+        else if (filter == "active" || filter == "completed")
+        {
+            filteredTodos.ForEach(t => t.IsCompleted = !t.IsCompleted);
+        }
+        await TodoService.ToggleAllTodoItems(filteredTodos);
+    }
+}

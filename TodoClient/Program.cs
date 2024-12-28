@@ -1,10 +1,13 @@
 using TodoClient.Components;
+using TodoClient.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5008/api/") });
+builder.Services.AddScoped<ITodoService, TodoService>();
 
 var app = builder.Build();
 

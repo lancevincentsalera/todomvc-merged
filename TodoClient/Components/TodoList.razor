@@ -1,0 +1,27 @@
+@using TodoClient.Data.Models
+@using TodoClient.Services
+@inject ITodoService TodoService
+
+<ul class="todo-list">
+    <Virtualize Items="FilterTodos()" Context="todo">
+        <Todo @key="todo.Id" todo="todo" RemoveItem="RemoveItem" IsEditing="todo == editingTodo"
+            OnStartEditing="SetEditingTodo" OnStopEditing="ClearEditingTodo" />
+    </Virtualize>
+</ul>
+@code {
+    [Parameter]
+    public required List<TodoItem> Todos { get; set; }
+    [Parameter]
+    public required Func<List<TodoItem>> FilterTodos { get; set; }
+    private TodoItem? editingTodo;
+
+    // Child function parameters
+    public async Task RemoveItem(TodoItem todo)
+    {
+        await TodoService.DeleteTodoItem(todo.Id);
+        Todos.Remove(todo);
+    }
+    // Toggle editing
+    private void SetEditingTodo(TodoItem todo) => editingTodo = todo;
+    private void ClearEditingTodo() => editingTodo = null;
+}
