@@ -11,32 +11,32 @@ public class TodoService : ITodoService
 
     public async Task<List<TodoItem>> LoadTodos()
     {
-        var response = await _http.GetFromJsonAsync<List<TodoItem>>("todos");
+        var response = await _http.GetFromJsonAsync<List<TodoItem>>("todoitems");
         return response ?? new List<TodoItem>();
     }
     public async Task<TodoItem> AddTodoItem(TodoItemDto todoItem)
     {
-        var response = await _http.PostAsJsonAsync("todos", todoItem);
+        var response = await _http.PostAsJsonAsync("todoitems", todoItem);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<TodoItem>()
                 ?? throw new InvalidOperationException("Response deserialization failed.");
     }
     public async Task<TodoItem> UpdateTodoItem(TodoItem todoItem)
     {
-        var response = await _http.PutAsJsonAsync($"todos/{todoItem.Id}", todoItem);
+        var response = await _http.PutAsJsonAsync($"todoitems/{todoItem.Id}", todoItem);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<TodoItem>()
                 ?? throw new InvalidOperationException("Response deserialization failed.");
     }
     public async Task ToggleAllTodoItems(List<TodoItem> todoItems)
     {
-        var response = await _http.PutAsJsonAsync("todos/toggle-all", todoItems);
+        var response = await _http.PutAsJsonAsync("todoitems/toggle-all", todoItems);
         response.EnsureSuccessStatusCode();
     }
-    public async Task DeleteTodoItem(int id) => await _http.DeleteAsync($"todos/{id}");
+    public async Task DeleteTodoItem(int id) => await _http.DeleteAsync($"todoitems/{id}");
     public async Task<List<TodoItem>> ClearCompleted()
     {
-        var response = await _http.DeleteAsync("todos/clear-completed");
+        var response = await _http.DeleteAsync("todoitems/completed");
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<List<TodoItem>>()
                 ?? throw new InvalidOperationException("Response deserialization failed.");
