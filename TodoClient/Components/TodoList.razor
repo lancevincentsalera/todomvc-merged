@@ -5,7 +5,7 @@
 <ul class="todo-list">
     <Virtualize Items="FilterTodos()" Context="todo">
         <Todo @key="todo.Id" todo="todo" RemoveItem="RemoveItem" IsEditing="todo == editingTodo"
-            OnStartEditing="SetEditingTodo" OnStopEditing="ClearEditingTodo" />
+            OnStartEditing="SetEditingTodo" OnStopEditing="ClearEditingTodo" UpdateState="UpdateState" />
     </Virtualize>
 </ul>
 @code {
@@ -13,6 +13,8 @@
     public required List<TodoItem> Todos { get; set; }
     [Parameter]
     public required Func<List<TodoItem>> FilterTodos { get; set; }
+    [Parameter]
+    public EventCallback UpdateState { get; set; }
     private TodoItem? editingTodo;
 
     // Child function parameters
@@ -20,6 +22,7 @@
     {
         await TodoService.DeleteTodoItem(todo.Id);
         Todos.Remove(todo);
+        await UpdateState.InvokeAsync();
     }
     // Toggle editing
     private void SetEditingTodo(TodoItem todo) => editingTodo = todo;

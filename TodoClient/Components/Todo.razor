@@ -31,10 +31,16 @@
     public EventCallback<TodoItem> OnStartEditing { get; set; }
     [Parameter]
     public EventCallback OnStopEditing { get; set; }
+    [Parameter]
+    public EventCallback UpdateState { get; set; }
     private bool focusRequested = false;
     private ElementReference editInput;
     private async Task OnRemoveClick(MouseEventArgs e) => await RemoveItem.InvokeAsync(todo);
-    private async void UpdateCheckbox() => await TodoService.UpdateTodoItem(todo);
+    private async void UpdateCheckbox()
+    {
+        await TodoService.UpdateTodoItem(todo);
+        await UpdateState.InvokeAsync();
+    }
     private async Task HandleDoubleClick(MouseEventArgs e)
     {
         await OnStartEditing.InvokeAsync(todo);

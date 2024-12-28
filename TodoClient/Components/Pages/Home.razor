@@ -22,7 +22,7 @@
                 <label class="toggle-all-label">Toggle All Input</label>
             </div>
         }
-        <TodoList Todos="todos" FilterTodos="FilterTodos" />
+        <TodoList Todos="todos" FilterTodos="FilterTodos" UpdateState="UpdateState" />
     </main>
     @if (todos.Count != 0)
     {
@@ -98,4 +98,5 @@
         }
         await TodoService.ToggleAllTodoItems(filteredTodos);
     }
+    private void UpdateState() => StateHasChanged();
 }
