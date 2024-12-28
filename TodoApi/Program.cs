@@ -150,7 +150,7 @@ app.MapDelete("/api/todoitems/completed", async (TodoApiContext db) =>
 
     await db.SaveChangesAsync();
 
-    return Results.NoContent();
+    return Results.Ok(todos.Select(todo => new TodoItemReadDto(todo.Id, todo.Title, todo.IsCompleted)));
 })
 .WithName("DeleteCompletedItems")
 .WithTags("TodoList")
