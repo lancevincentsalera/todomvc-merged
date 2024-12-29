@@ -66,21 +66,35 @@
     // Lifecycle functions
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        try
         {
-            todos = await TodoService.LoadTodos();
-            StateHasChanged();
+            if (firstRender)
+            {
+                todos = await TodoService.LoadTodos();
+                StateHasChanged();
+            }
+        }
+        catch (Exception e)
+        {
+            throw new Exception("Could not load todos", e);
         }
     }
 
     // Event Handlers
     private async Task HandleNewTodoKeyUp(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && text.Length > 1)
+        try
         {
-            var todo = await TodoService.AddTodoItem(new TodoItemCreateDto(text));
-            text = string.Empty;
-            todos.Add(todo);
+            if (e.Key == "Enter" && text.Length > 1)
+            {
+                var todo = await TodoService.AddTodoItem(new TodoItemCreateDto(text));
+                text = string.Empty;
+                todos.Add(todo);
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error adding todo", ex);
         }
     }
     private async Task ClearCompleted(MouseEventArgs e) => todos = await TodoService.ClearCompleted();

@@ -38,8 +38,15 @@
     private async Task OnRemoveClick(MouseEventArgs e) => await RemoveItem.InvokeAsync(todo);
     private async void UpdateCheckbox()
     {
-        await TodoService.UpdateTodoItem(todo);
-        await UpdateState.InvokeAsync();
+        try
+        {
+            await TodoService.UpdateTodoItem(todo);
+            await UpdateState.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error updating todo", ex);
+        }
     }
     private async Task HandleDoubleClick(MouseEventArgs e)
     {
@@ -49,10 +56,17 @@
     private async Task HandleEditBlur(FocusEventArgs e) => await OnStopEditing.InvokeAsync();
     private async Task HandleKeyUp(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && todo.Title.Length > 1)
+        try
         {
-            await OnStopEditing.InvokeAsync();
-            await TodoService.UpdateTodoItem(todo);
+            if (e.Key == "Enter" && todo.Title.Length > 1)
+            {
+                await OnStopEditing.InvokeAsync();
+                await TodoService.UpdateTodoItem(todo);
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error updating todo", ex);
         }
     }
 

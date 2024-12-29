@@ -20,9 +20,16 @@
     // Child function parameters
     public async Task RemoveItem(TodoItem todo)
     {
-        await TodoService.DeleteTodoItem(todo.Id);
-        Todos.Remove(todo);
-        await UpdateState.InvokeAsync();
+        try
+        {
+            await TodoService.DeleteTodoItem(todo.Id);
+            Todos.Remove(todo);
+            await UpdateState.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error deleting todo", ex);
+        }
     }
     // Toggle editing
     private void SetEditingTodo(TodoItem todo) => editingTodo = todo;
