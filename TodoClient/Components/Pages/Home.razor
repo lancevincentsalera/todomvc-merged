@@ -78,7 +78,7 @@
     {
         if (e.Key == "Enter" && text.Length > 1)
         {
-            var todo = await TodoService.AddTodoItem(new TodoItemDto { Title = text });
+            var todo = await TodoService.AddTodoItem(new TodoItemCreateDto(text));
             text = string.Empty;
             todos.Add(todo);
         }

@@ -14,7 +14,7 @@ public class TodoService : ITodoService
         var response = await _http.GetFromJsonAsync<List<TodoItem>>("todoitems");
         return response ?? new List<TodoItem>();
     }
-    public async Task<TodoItem> AddTodoItem(TodoItemDto todoItem)
+    public async Task<TodoItem> AddTodoItem(TodoItemCreateDto todoItem)
     {
         var response = await _http.PostAsJsonAsync("todoitems", todoItem);
         response.EnsureSuccessStatusCode();
@@ -23,7 +23,7 @@ public class TodoService : ITodoService
     }
     public async Task UpdateTodoItem(TodoItem todoItem)
     {
-        var response = await _http.PutAsJsonAsync($"todoitems/{todoItem.Id}", todoItem);
+        var response = await _http.PutAsJsonAsync($"todoitems/{todoItem.Id}", new TodoItemUpdateDto(todoItem.Title, todoItem.IsCompleted));
         response.EnsureSuccessStatusCode();
     }
     public async Task ToggleAllTodoItems(List<TodoItem> todoItems)
