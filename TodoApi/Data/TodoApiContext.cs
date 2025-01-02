@@ -3,12 +3,17 @@ using TodoApi.Data.Models;
 
 namespace TodoApi.Data;
 
-public class TodoApiContext : DbContext
+public class TodoApiContext(DbContextOptions<TodoApiContext> options) : DbContext(options)
 {
-    public TodoApiContext(DbContextOptions<TodoApiContext> options)
-        : base(options)
-    {
-    }
+    public required DbSet<TodoItem> TodoItems { get; set; }
 
-    public DbSet<TodoItem> TodoItems { get; set; } = null!;
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TodoItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired();
+            entity.Property(e => e.IsCompleted).HasDefaultValue(false);
+        });
+    }
 }
